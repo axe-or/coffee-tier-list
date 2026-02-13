@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coffee Tier List</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        :root {
+            /* Mocha Palette */
+            --bg-dark: oklch(25% 0.0066 48.3);
+            --bg-panel: oklch(30% 0.0066 48.3);
+            --text-main: oklch(90% 0.0333 83.7);
+            --text-muted: oklch(75% 0.0225 83.7);
+            --accent-gold: #cfaa76;
+            --border-color: oklch(10% 0.0066 48.3);
+
+            /* Tier Colors (Muted/Vintage style) */
+            --tier-s: #ff7f7f;
+            --tier-a: #ffbf7f;
+            --tier-b: #ffdf7f;
+            --tier-c: #ffff7f;
+            --tier-d: #bfff7f;
+            --tier-e: #7fff7f;
+            --tier-f: #7fffff;
+            --tier-u: #9e9e9e;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Georgia', 'Times New Roman', serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            border-bottom: 2px solid var(--accent-gold);
+            padding-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        /* Controls Section */
+        .controls {
+            background-color: var(--bg-panel);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 30px;
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: flex-start;
+            align-items: end;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-size: 0.9rem;
+            color: var(--accent-gold);
+        }
+
+        input[type="text"], input[type="file"] {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+
+        button {
+            background-color: var(--accent-gold);
+            color: var(--bg-dark);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button.outline {
+            background: transparent;
+            border: 1px solid var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        .push-right {
+            margin-left: auto;
+        }
+
+        /* Tier List Structure */
+        .tier-container {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .tier-row {
+            display: flex;
+            min-height: 200px;
+            background-color: #1a1515;
+            border: 1px solid var(--border-color);
+        }
+
+        .tier-label {
+            width: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+            text-shadow: 1px 1px 0 rgba(255,255,255,0.2);
+            flex-shrink: 0;
+            border-right: 2px solid rgba(0,0,0,0.5);
+        }
+
+        /* Dynamic background colors for labels */
+        .bg-S { background-color: var(--tier-s); }
+        .bg-A { background-color: var(--tier-a); }
+        .bg-B { background-color: var(--tier-b); }
+        .bg-C { background-color: var(--tier-c); }
+        .bg-D { background-color: var(--tier-d); }
+        .bg-E { background-color: var(--tier-e); }
+        .bg-F { background-color: var(--tier-f); }
+        .bg-Unranked { background-color: var(--tier-u); font-size: 1rem; }
+
+        .tier-content {
+            flex-grow: 1;
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .tier-content.drag-over {
+            background-color: rgba(207, 170, 118, 0.1);
+        }
+
+        /* Card Item */
+        .coffee-card {
+            width: 180px;
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: grab;
+            transition: transform 0.1s;
+        }
+
+        .coffee-card:active {
+            cursor: grabbing;
+        }
+
+        .coffee-card img {
+            width: 180px;
+            height: 180px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .coffee-card span {
+            padding: 8px;
+            text-align: center;
+            font-size: 0.85rem;
+            width: 100%;
+            box-sizing: border-box;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .hidden-input {
+            display: none;
+        }
+
+        /* Specific adjustments for responsive controls */
+        @media (max-width: 600px) {
+            .controls { flex-direction: column; align-items: stretch; }
+            .push-right { margin-left: 0; margin-top: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div x-data="tierListApp()">
+        <h1>Coffee Ranking</h1>
+
+        <div class="controls">
+            <div class="input-group">
+                <label>Coffee Name</label>
+                <input type="text" x-model="newItemName" placeholder="e.g. Holler Mountain">
+            </div>
+
+            <div class="input-group">
+                <label>Brand / Roaster</label>
+                <input type="text" x-model="newItemBrand" placeholder="e.g. Stumptown">
+            </div>
+
+            <div class="input-group">
+                <label>Image</label>
+                <input type="file" x-ref="imageInput" accept="image/*" @change="handleImageUpload">
+            </div>
+
+            <button @click="addItem">Add Coffee</button>
+
+            <div class="input-group push-right">
+                <label>Data Management</label>
+                <div style="display:flex; gap:10px;">
+                    <button class="outline" @click="saveJson">Save</button>
+                    <button class="outline" @click="$refs.loadInput.click()">Load</button>
+                    <input x-ref="loadInput" type="file" class="hidden-input" accept=".json" @change="loadJson">
+                </div>
+            </div>
+        </div>
+
+        <div class="tier-container">
+            <template x-for="tierKey in Object.keys(tiers)" :key="tierKey">
+                <div class="tier-row">
+                    <div class="tier-label" :class="'bg-' + tierKey">
+                        <span x-text="tierKey === 'Unranked' ? 'Waiting' : tierKey"></span>
+                    </div>
+
+                    <div class="tier-content"
+                         @dragover.prevent="dragOver = tierKey"
+                         @dragleave="dragOver = null"
+                         @drop="dropItem(tierKey)"
+                         :class="{ 'drag-over': dragOver === tierKey }">
+
+                        <template x-for="(item, index) in tiers[tierKey]" :key="item.id">
+                            <div class="coffee-card"
+                                 draggable="true"
+                                 @dragstart="dragStart(tierKey, index)"
+                                 @dblclick="deleteItem(tierKey, index)"
+                                 title="Double click to remove">
+                                <img :src="item.image" :alt="item.name">
+                                <span x-text="`${item.name} (${item.brand})`"></span>
+                            </div>
+                        </template>
+
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <script>
+        function tierListApp() {
+            return {
+                newItemName: '',
+                newItemBrand: '', // New data field
+                newItemImage: null,
+                dragOver: null,
+                draggingItem: null,
+
+                tiers: {
+                    'S': [],
+                    'A': [],
+                    'B': [],
+                    'C': [],
+                    'D': [],
+                    'E': [],
+                    'F': [],
+                    'Unranked': []
+                },
+
+                handleImageUpload(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (evt) => {
+                            this.newItemImage = evt.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                },
+
+                addItem() {
+                    // Updated validation to require Brand
+                    if (!this.newItemName || !this.newItemBrand || !this.newItemImage) {
+                        alert("Please provide a Name, Brand, and Image.");
+                        return;
+                    }
+
+                    const item = {
+                        id: Date.now(),
+                        name: this.newItemName,
+                        brand: this.newItemBrand, // Store Brand
+                        image: this.newItemImage
+                    };
+
+                    this.tiers.Unranked.push(item);
+
+                    // Reset all inputs
+                    this.newItemName = '';
+                    this.newItemBrand = '';
+                    this.newItemImage = null;
+                    this.$refs.imageInput.value = '';
+                },
+
+                deleteItem(tier, index) {
+                    if(confirm('Remove this coffee?')) {
+                        this.tiers[tier].splice(index, 1);
+                    }
+                },
+
+                dragStart(tier, index) {
+                    this.draggingItem = { tier, index };
+                },
+
+                dropItem(targetTier) {
+                    if (!this.draggingItem) return;
+                    const { tier: sourceTier, index: sourceIndex } = this.draggingItem;
+
+                    const [movedItem] = this.tiers[sourceTier].splice(sourceIndex, 1);
+                    this.tiers[targetTier].push(movedItem);
+
+                    this.draggingItem = null;
+                    this.dragOver = null;
+                },
+
+                saveJson() {
+                    const dataStr = JSON.stringify(this.tiers, null, 2);
+                    const blob = new Blob([dataStr], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = "coffee_tier_list.json";
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                },
+
+                loadJson(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        try {
+                            const data = JSON.parse(evt.target.result);
+                            if (data.S && data.Unranked) {
+                                this.tiers = data;
+                            } else {
+                                alert("Invalid JSON format.");
+                            }
+                        } catch (err) {
+                            alert("Error parsing JSON file.");
+                            console.error(err);
+                        }
+                    };
+                    reader.readAsText(file);
+                    e.target.value = '';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
