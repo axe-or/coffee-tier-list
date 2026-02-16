@@ -13,8 +13,8 @@
             --bg-panel: oklch(30% 0.0066 48.3);
             --text-main: oklch(90% 0.0333 83.7);
             --text-muted: oklch(75% 0.0225 83.7);
-            --accent-gold: #cfaa76;
-            --border-color: oklch(10% 0.0066 48.3);
+            --accent-gold: oklch(0.7592 0.081 75.49);
+            --border-color: oklch(0.543 0.0274 75.49);
 
             /* Tier Colors (Muted/Vintage style) */
             --tier-s: #ff7f7f;
@@ -59,10 +59,9 @@
             max-width: 900px;
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 12px;
             justify-content: flex-start;
             align-items: end;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
 
         .input-group {
@@ -111,20 +110,33 @@
             margin-left: auto;
         }
 
+        .prep-info {
+            background-color: var(--bg-panel);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin-top: 30px;
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-muted);
+        }
+
         /* Tier List Structure */
         .tier-container {
             width: 100%;
             max-width: 1000px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 6px;
         }
 
         .tier-row {
             display: flex;
-            min-height: 200px;
+            min-height: 120px;
             background-color: #1a1515;
-            border: 1px solid var(--border-color);
         }
 
         .tier-label {
@@ -132,7 +144,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
+            font-size: 1.8rem;
             font-weight: bold;
             color: #333;
             text-shadow: 1px 1px 0 rgba(255,255,255,0.2);
@@ -165,7 +177,7 @@
 
         /* Card Item */
         .coffee-card {
-            width: 180px;
+            width: 160px;
             background-color: var(--bg-panel);
             border: 1px solid var(--border-color);
             display: flex;
@@ -180,8 +192,8 @@
         }
 
         .coffee-card img {
-            width: 180px;
-            height: 180px;
+            width: 100px;
+            height: 100px;
             object-fit: cover;
             display: block;
         }
@@ -209,19 +221,18 @@
     </style>
 </head>
 <body>
-
-    <div x-data="tierListApp()">
-        <h1>Coffee Ranking</h1>
+    <div x-data="tierListApp()" x-init="init()">
+        <h1>Coffee Tier List</h1>
 
         <div class="controls">
             <div class="input-group">
                 <label>Coffee Name</label>
-                <input type="text" x-model="newItemName" placeholder="e.g. Holler Mountain">
+                <input type="text" x-model="newItemName" placeholder="e.g. Mogiana Paulista">
             </div>
 
             <div class="input-group">
-                <label>Brand / Roaster</label>
-                <input type="text" x-model="newItemBrand" placeholder="e.g. Stumptown">
+                <label>Brand</label>
+                <input type="text" x-model="newItemBrand" placeholder="e.g. 3 Corações">
             </div>
 
             <div class="input-group">
@@ -231,11 +242,10 @@
 
             <button @click="addItem">Add Coffee</button>
 
-            <div class="input-group push-right">
-                <label>Data Management</label>
+            <div class="input-group">
                 <div style="display:flex; gap:10px;">
-                    <button class="outline" @click="saveJson">Save</button>
-                    <button class="outline" @click="$refs.loadInput.click()">Load</button>
+                    <button class="outline" @click="saveJson">Export</button>
+                    <button class="outline" @click="$refs.loadInput.click()">Import</button>
                     <input x-ref="loadInput" type="file" class="hidden-input" accept=".json" @change="loadJson">
                 </div>
             </div>
@@ -269,6 +279,11 @@
                 </div>
             </template>
         </div>
+
+        <div class="prep-info">
+            All coffees are prepared using the Hoffman french press technique with 25g of coffee + 600ml of water.
+        </div>
+
     </div>
 
     <script>
@@ -289,6 +304,26 @@
                     'E': [],
                     'F': [],
                     'Unranked': []
+                },
+
+                init() {
+                    const savedTiers = localStorage.getItem('coffeeTierList');
+                    if (savedTiers) {
+                        try {
+                            const parsedTiers = JSON.parse(savedTiers);
+                            // Basic validation to ensure it's a tier object
+                            if (parsedTiers && typeof parsedTiers === 'object' && parsedTiers.S !== undefined) {
+                                this.tiers = parsedTiers;
+                            }
+                        } catch (e) {
+                            console.error("Failed to load tiers from localStorage", e);
+                            localStorage.removeItem('coffeeTierList'); // Clear corrupted data
+                        }
+                    }
+                },
+
+                saveState() {
+                    localStorage.setItem('coffeeTierList', JSON.stringify(this.tiers));
                 },
 
                 handleImageUpload(e) {
@@ -317,6 +352,7 @@
                     };
 
                     this.tiers.Unranked.push(item);
+                    this.saveState();
 
                     // Reset all inputs
                     this.newItemName = '';
@@ -328,6 +364,7 @@
                 deleteItem(tier, index) {
                     if(confirm('Remove this coffee?')) {
                         this.tiers[tier].splice(index, 1);
+                        this.saveState();
                     }
                 },
 
@@ -341,6 +378,7 @@
 
                     const [movedItem] = this.tiers[sourceTier].splice(sourceIndex, 1);
                     this.tiers[targetTier].push(movedItem);
+                    this.saveState();
 
                     this.draggingItem = null;
                     this.dragOver = null;
@@ -368,8 +406,9 @@
                     reader.onload = (evt) => {
                         try {
                             const data = JSON.parse(evt.target.result);
-                            if (data.S && data.Unranked) {
+                            if (data.S !== undefined && data.Unranked !== undefined) {
                                 this.tiers = data;
+                                this.saveState(); // Save after successful import
                             } else {
                                 alert("Invalid JSON format.");
                             }
