@@ -106,6 +106,16 @@
             color: var(--accent-gold);
         }
 
+        button.outline.danger {
+            border-color: var(--tier-s);
+            color: var(--tier-s);
+        }
+
+        button.outline.danger:hover {
+            background-color: rgba(255, 127, 127, 0.1);
+            opacity: 1;
+        }
+
         .push-right {
             margin-left: auto;
         }
@@ -246,6 +256,7 @@
                 <div style="display:flex; gap:10px;">
                     <button class="outline" @click="saveJson">Export</button>
                     <button class="outline" @click="$refs.loadInput.click()">Import</button>
+                    <button class="outline danger" @click="clearAll">Clear All</button>
                     <input x-ref="loadInput" type="file" class="hidden-input" accept=".json" @change="loadJson">
                 </div>
             </div>
@@ -296,6 +307,7 @@
                 draggingItem: null,
 
                 tiers: {
+                    'Unranked': [],
                     'S': [],
                     'A': [],
                     'B': [],
@@ -303,7 +315,6 @@
                     'D': [],
                     'E': [],
                     'F': [],
-                    'Unranked': []
                 },
 
                 init() {
@@ -324,6 +335,22 @@
 
                 saveState() {
                     localStorage.setItem('coffeeTierList', JSON.stringify(this.tiers));
+                },
+
+                clearAll() {
+                    if (confirm('Are you sure you want to clear the entire tier list? This will delete all items and cannot be undone.')) {
+                        this.tiers = {
+                            'Unranked': [],
+                            'S': [],
+                            'A': [],
+                            'B': [],
+                            'C': [],
+                            'D': [],
+                            'E': [],
+                            'F': []
+                        };
+                        this.saveState();
+                    }
                 },
 
                 handleImageUpload(e) {
